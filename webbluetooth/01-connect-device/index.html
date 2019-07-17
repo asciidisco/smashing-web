@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebBluetooth: Connect to device and list device stats</title>
+    <script>
+      // display device meta
+      async function displayDeviceStats (device) {
+        document.getElementById('device-stats-headline').style.visibility = 'visible'
+        const $ul = document.getElementById('device-stats-list')
+        // add device name
+        const $name = document.createElement('li')
+        $name.innerHTML = `<strong>Name:</strong>&nbsp;<i>${device.name}</i>` 
+        $ul.appendChild($name) 
+        // add device id
+        const $id = document.createElement('li')
+        $id.innerHTML = `<strong>ID:</strong>&nbsp;<i>${device.id}</i>` 
+        $ul.appendChild($id)  
+      }
+
+      // connect to the device
+      async function connect() {
+        // get all connectable bluetooth devices
+        device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true })
+        // display the device stats
+        await displayDeviceStats(device)
+      }
+    </script>
+  </head>
+  <body>
+    <h2 id="device-stats-headline" style="visibility: hidden">Device stats:</h2>
+    <ul id="device-stats-list"></ul>
+    <button id="connect" onclick="connect()">Connect</button>
+  </body>
+</html>

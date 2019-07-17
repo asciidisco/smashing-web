@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebBluetooth: Measure ❤️-rate</title>
+  </head>
+  <body>
+    <button onclick="measure()">Connect & start measurement</button>
+    <div id="heart">❤️<span></span></div>
+    <script>
+        // parses the heart rate
+        function parseHeartRate (value) {
+          // value is return as an DataView
+          // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView
+          const index = 1
+          // determine if we deal with an unsigned 16-bit or unsigned 8-bit integer 
+          const flags = value.getUint8(0)
+          const rate16Bits = flags & 0x1
+          // parse out heart rate from DataView
+          return rate16Bits ? value.getUint16(index, true) : value.getUint8(index)
+        }
+        
+        // open device picker & connect to GATT server
+        async function connect() {
+          const device = await navigator.bluetooth.requestDevice({ filters:[{ services:['heart_rate'] }] })
+          return device.gatt.connect()
+        }
+
+        // will be invoked every time we get a new measurement
+        // parses the heart rate & writes it to the document
+        function characteristicValueChangeHandler (statusText, event) {
+          statusText.innerText = parseHeartRate(event.target.value)
+        }
+
+        // connects to the device, service & characteristic
+        // adds an event listener to the characteristic that invokes a callback on every update
+        window.measure = async function () {
+          const statusText = document.querySelector('#heart span')
+          const server = await connect()
+          const service = await server.getPrimaryService('heart_rate')
+          const characteristic = await service.getCharacteristic('heart_rate_measurement')
+          await characteristic.startNotifications()
+          characteristic.addEventListener('characteristicvaluechanged', characteristicValueChangeHandler.bind(null, statusText))
+        }
+    </script>
+  </body>
+</html>

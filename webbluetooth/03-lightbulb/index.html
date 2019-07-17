@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebBluetooth: Control Bluetooth lightbulb</title>
+  </head>
+  <body>
+    <button onclick="connect()">Connect to bulb</button>
+    <button id="off" style="visibility: hidden;" onclick="bulbOff()">Turn off</button>
+    <button id="on" style="visibility: hidden;" onclick="bulbOn()">Turn on</button>
+    <script>
+        // connects to the device, service & characteristic
+        // creates 2 functions on the window object that enable the bulb to be turned on & off
+        window.connect = async function () {
+          const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [0xcc02] })
+          const server = await device.gatt.connect()
+          // this specific bulb has no API that adheres to any standard, so we need to add
+          // vendor specific values for service, characteristic & payload
+          const service = await server.getPrimaryService(0xcc02)
+          const characteristic = await service.getCharacteristic(0xee03)
+          // create functions that toggle the bulb state
+          window.bulbOff = (function () {
+            return this.writeValue(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]))
+          }.bind(characteristic))
+          window.bulbOn = (function () {
+            return this.writeValue(new Uint8Array([0x01, 0xf9, 0x01, 0x00, 0x01, 0xff, 0x01, 0xf3, 0x01, 0xff]))
+          }.bind(characteristic))
+          // show steering buttons
+          document.querySelector('#off').style.visibility = 'visible'
+          document.querySelector('#on').style.visibility = 'visible'
+        }
+    </script>
+  </body>
+</html>

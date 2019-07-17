@@ -1,0 +1,66 @@
+<html>
+  <head>
+    <title>WebUSB: Capture input from HID devices</title>
+    <script>
+      // variable that helps us keep track of transmitted chars
+      let lastInput = []
+      // lookup book details by ISBN from `https://openlibrary.org`
+      async function lookUpBook (isbn) {
+        const response = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&jscmd=details&format=json`)
+        return response.json()
+      }
+
+      // adds a book to the document
+      function addBook (book) {
+        const bookKey = Object.keys(book)[0]
+        const bookItem = book[bookKey]
+        const $ul = document.getElementById('book-list')
+        const $li = document.createElement('li')
+        const $img = document.createElement('img')
+        const $title = document.createElement('h4')
+        const $author = document.createElement('strong')
+        $img.src = bookItem.thumbnail_url
+        $img.style.width = '5rem'
+        $title.textContent = `${bookItem.details.title} ${bookItem.details.subtitle ? ` - ${bookItem.details.subtitle}` : ''} (ISBN: ${bookItem.bib_key})`
+        $author.textContent = bookItem.details.publishers[0]
+        $li.appendChild($img)
+        $li.appendChild($title)
+        $li.appendChild($author)
+        $ul.appendChild($li)
+      }
+
+      // function that gets called once we have an ISBN number completely
+      // available in our buffer, looks up & displays book details
+      async function receiveISBN (isbn) {
+        console.log(`Found ISBN: ${isbn}`)
+        const book = await lookUpBook(isbn)
+        addBook(book)
+      }
+
+      // listen to global (document wide) key press events
+      // to capture the keypress events not bound to a specific element
+      document.onkeypress = event => {
+        // check if we have an event argument,
+        // otherwise use the one globally provides
+        event = event || window.event
+        // determine the character code from the input
+        const charCode = (typeof event.which === 'number') ? event.which : event.keyCode
+        // charCode 13 is the return key, which is the way the barcode scanner
+        // signals to us, that it is done reading the number from the barcode
+        if (charCode === 13) {
+          // check if the input length corresponds with the length of the ISBN (13 chars)
+          // Note: You may need to adapt that number if you want to read out other barcodes
+          if (lastInput.length === 13) receiveISBN(lastInput.join(''))
+          // clear inout buffer
+          lastInput = []
+        }
+        // add string, converted from char code, if we haven't received a `return` key signal
+        if (charCode && charCode !== 13) lastInput.push(String.fromCharCode(charCode))
+      }
+    </script>
+  </head>
+  <body>
+    <h1>List of scanned Books:</h1>
+    <ul id="book-list"></ul>
+  </body>
+</html>
